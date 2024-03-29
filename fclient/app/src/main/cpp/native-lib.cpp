@@ -17,7 +17,7 @@ char *personalization = "fclient-sample-app";
 auto android_logger = spdlog::android_logger_mt("android", "fclient_ndk");
 
 extern "C" JNIEXPORT jstring JNICALL
-Java_ru_iu3_fclient_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
+Java_ru_iu3_fclient_MainActivity_stringFromJNI(JNIEnv *env, jobject /* this */) {
     std::string hello = "Hello from C++";
     LOG_INFO("Hello from c++ %d", 2023);
     SLOG_INFO("Hello from spdlog {0}", 2023);
@@ -26,28 +26,27 @@ Java_ru_iu3_fclient_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) 
 
 extern "C" JNIEXPORT jint JNICALL
 Java_ru_iu3_fclient_MainActivity_initRng(JNIEnv *env, jclass clazz) {
-    mbedtls_entropy_init( &entropy );
-    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init(&entropy);
+    mbedtls_ctr_drbg_init(&ctr_drbg);
 
-    return mbedtls_ctr_drbg_seed( &ctr_drbg , mbedtls_entropy_func, &entropy,
-                                  (const unsigned char *) personalization,
-                                  strlen( personalization ) );
+    return mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,
+                                 (const unsigned char *) personalization,
+                                 strlen(personalization));
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_ru_iu3_fclient_MainActivity_randomBytes(JNIEnv *env, jclass, jint no) {
-    uint8_t * buf = new uint8_t [no];
+    uint8_t *buf = new uint8_t[no];
     mbedtls_ctr_drbg_random(&ctr_drbg, buf, no);
     jbyteArray rnd = env->NewByteArray(no);
-    env->SetByteArrayRegion(rnd, 0, no, (jbyte *)buf);
+    env->SetByteArrayRegion(rnd, 0, no, (jbyte *) buf);
     delete[] buf;
     return rnd;
 }
 
 // https://tls.mbed.org/api/des_8h.html
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_ru_iu3_fclient_MainActivity_encrypt(JNIEnv *env, jclass, jbyteArray key, jbyteArray data)
-{
+Java_ru_iu3_fclient_MainActivity_encrypt(JNIEnv *env, jclass, jbyteArray key, jbyteArray data) {
     jsize ksz = env->GetArrayLength(key);
     jsize dsz = env->GetArrayLength(data);
     if ((ksz != 16) || (dsz <= 0)) {
@@ -56,22 +55,22 @@ Java_ru_iu3_fclient_MainActivity_encrypt(JNIEnv *env, jclass, jbyteArray key, jb
     mbedtls_des3_context ctx;
     mbedtls_des3_init(&ctx);
 
-    jbyte * pkey = env->GetByteArrayElements(key, 0);
+    jbyte *pkey = env->GetByteArrayElements(key, 0);
 
     // Паддинг PKCS#5
     int rst = dsz % 8;
     int sz = dsz + 8 - rst;
-    uint8_t * buf = new uint8_t[sz];
+    uint8_t *buf = new uint8_t[sz];
     for (int i = 7; i > rst; i--)
         buf[dsz + i] = rst;
-    jbyte * pdata = env->GetByteArrayElements(data, 0);
+    jbyte *pdata = env->GetByteArrayElements(data, 0);
     std::copy(pdata, pdata + dsz, buf);
-    mbedtls_des3_set2key_enc(&ctx, (uint8_t *)pkey);
+    mbedtls_des3_set2key_enc(&ctx, (uint8_t *) pkey);
     int cn = sz / 8;
     for (int i = 0; i < cn; i++)
-        mbedtls_des3_crypt_ecb(&ctx, buf + i*8, buf + i*8);
+        mbedtls_des3_crypt_ecb(&ctx, buf + i * 8, buf + i * 8);
     jbyteArray dout = env->NewByteArray(sz);
-    env->SetByteArrayRegion(dout, 0, sz, (jbyte *)buf);
+    env->SetByteArrayRegion(dout, 0, sz, (jbyte *) buf);
     delete[] buf;
     env->ReleaseByteArrayElements(key, pkey, 0);
     env->ReleaseByteArrayElements(data, pdata, 0);
@@ -79,8 +78,7 @@ Java_ru_iu3_fclient_MainActivity_encrypt(JNIEnv *env, jclass, jbyteArray key, jb
 }
 
 extern "C" JNIEXPORT jbyteArray JNICALL
-Java_ru_iu3_fclient_MainActivity_decrypt(JNIEnv *env, jclass, jbyteArray key, jbyteArray data)
-{
+Java_ru_iu3_fclient_MainActivity_decrypt(JNIEnv *env, jclass, jbyteArray key, jbyteArray data) {
     jsize ksz = env->GetArrayLength(key);
     jsize dsz = env->GetArrayLength(data);
     if ((ksz != 16) || (dsz <= 0) || ((dsz % 8) != 0)) {
@@ -89,46 +87,42 @@ Java_ru_iu3_fclient_MainActivity_decrypt(JNIEnv *env, jclass, jbyteArray key, jb
     mbedtls_des3_context ctx;
     mbedtls_des3_init(&ctx);
 
-    jbyte * pkey = env->GetByteArrayElements(key, 0);
+    jbyte *pkey = env->GetByteArrayElements(key, 0);
 
-    uint8_t * buf = new uint8_t[dsz];
+    uint8_t *buf = new uint8_t[dsz];
 
-    jbyte * pdata = env->GetByteArrayElements(data, 0);
+    jbyte *pdata = env->GetByteArrayElements(data, 0);
     std::copy(pdata, pdata + dsz, buf);
-    mbedtls_des3_set2key_dec(&ctx, (uint8_t *)pkey);
+    mbedtls_des3_set2key_dec(&ctx, (uint8_t *) pkey);
     int cn = dsz / 8;
     for (int i = 0; i < cn; i++)
-        mbedtls_des3_crypt_ecb(&ctx, buf + i*8, buf +i*8);
+        mbedtls_des3_crypt_ecb(&ctx, buf + i * 8, buf + i * 8);
 
     //PKCS#5. упрощено. по соображениям безопасности надо проверить каждый байт паддинга
-    int sz = dsz - 8 + buf[dsz-1];
+    int sz = dsz - 8 + buf[dsz - 1];
 
     jbyteArray dout = env->NewByteArray(sz);
-    env->SetByteArrayRegion(dout, 0, sz, (jbyte *)buf);
+    env->SetByteArrayRegion(dout, 0, sz, (jbyte *) buf);
     delete[] buf;
     env->ReleaseByteArrayElements(key, pkey, 0);
     env->ReleaseByteArrayElements(data, pdata, 0);
     return dout;
 }
 
-JavaVM* gJvm = nullptr;
+JavaVM *gJvm = nullptr;
 
-JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM* pjvm, void* reserved)
-{
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *pjvm, void *reserved) {
     gJvm = pjvm;
     return JNI_VERSION_1_6;
 }
 
-JNIEnv* getEnv (bool& detach)
-{
-    JNIEnv* env = nullptr;
-    int status = gJvm->GetEnv ((void**)&env, JNI_VERSION_1_6);
+JNIEnv *getEnv(bool &detach) {
+    JNIEnv *env = nullptr;
+    int status = gJvm->GetEnv((void **) &env, JNI_VERSION_1_6);
     detach = false;
-    if (status == JNI_EDETACHED)
-    {
-        status = gJvm->AttachCurrentThread (&env, NULL);
-        if (status < 0)
-        {
+    if (status == JNI_EDETACHED) {
+        status = gJvm->AttachCurrentThread(&env, NULL);
+        if (status < 0) {
             return nullptr;
         }
         detach = true;
@@ -136,11 +130,9 @@ JNIEnv* getEnv (bool& detach)
     return env;
 }
 
-void releaseEnv (bool detach, JNIEnv* env)
-{
-    if (detach && (gJvm != nullptr))
-    {
-        gJvm->DetachCurrentThread ();
+void releaseEnv(bool detach, JNIEnv *env) {
+    if (detach && (gJvm != nullptr)) {
+        gJvm->DetachCurrentThread();
     }
 }
 
