@@ -23,6 +23,8 @@ import ru.iu3.backend.models.User;
 import ru.iu3.backend.repositories.MuseumRepository;
 import ru.iu3.backend.repositories.UserRepository;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1")
 public class UsersController {
@@ -92,7 +94,7 @@ public class UsersController {
 
     @PostMapping("/users/{id}/addmuseums")
     public ResponseEntity<Object> addMuseums(@PathVariable(value = "id") Long userId,
-                                             @RequestBody Set<Museum> museums) {
+                                             @Valid @RequestBody Set<Museum> museums) {
         Optional<User> uu = userRepository.findById(userId);
         int cnt = 0;
         if (uu.isPresent()) {
@@ -114,7 +116,7 @@ public class UsersController {
 
     @PostMapping("/users/{id}/removemuseums")
     public ResponseEntity<Object> removeMuseums(@PathVariable(value = "id") Long userId,
-                                                @RequestBody Set<Museum> museums) {
+                                                @Valid @RequestBody Set<Museum> museums) {
         Optional<User> uu = userRepository.findById(userId);
         int cnt = 0;
         if (uu.isPresent()) {
