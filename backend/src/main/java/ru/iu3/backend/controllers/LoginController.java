@@ -31,7 +31,7 @@ public class LoginController {
                 User u2 = uu.get();
                 String hash1 = u2.password;
                 String salt = u2.salt;
-                String hash2 = Utils.ComputeHash(pwd, salt);
+                String hash2 = Utils.computeHash(pwd, salt);
                 if (hash1.toLowerCase().equals(hash2.toLowerCase())) {
                     String token = UUID.randomUUID().toString();
                     u2.token = token;
