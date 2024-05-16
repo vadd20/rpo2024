@@ -100,4 +100,3 @@ const UserComponent = props => {
 }
 
 export default connect()(UserComponent);
---
