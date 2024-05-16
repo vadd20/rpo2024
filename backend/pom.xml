@@ -69,7 +69,17 @@
             <version>3.0.0</version>
         </dependency>
 
-
+        <dependency>
+            <groupId>org.zalando</groupId>
+            <artifactId>logbook-spring-boot-starter</artifactId>
+            <version>3.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.zalando</groupId>
+            <artifactId>logbook-servlet</artifactId>
+            <version>3.8.0</version>
+            <classifier>javax</classifier>
+        </dependency>
     </dependencies>
 
     <build>

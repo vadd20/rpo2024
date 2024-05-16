@@ -22,6 +22,6 @@ public class Artist {
     public String age;
 
     @ManyToOne
-    @JoinColumn(name = "countryid")
+    @JoinColumn(name = "country")
     public Country country;
 }
